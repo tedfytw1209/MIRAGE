@@ -1,4 +1,4 @@
-[![npj Digital Medicine](https://img.shields.io/badge/npj-Digital_Medicine-red)](#)
+[![npj Digital Medicine](https://img.shields.io/badge/npj-Digital_Medicine-red)](https://rdcu.be/eH8un)
 [![arXiv](https://img.shields.io/badge/arXiv-2506.08900-red?logo=arXiv&logoColor=white)](https://arxiv.org/abs/2506.08900)
 [![HF](https://img.shields.io/badge/🤗_Hugging_Face-MIRAGE-blue)](https://huggingface.co/j-morano/models)
 [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC_BY--NC--ND_4.0-darkgreen.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
