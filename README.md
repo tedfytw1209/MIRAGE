@@ -1,4 +1,4 @@
-[![npj Digital Medicine](https://img.shields.io/badge/npj-Digital_Medicine-red)](https://rdcu.be/eH8un)
+[![npj Digital Medicine](https://img.shields.io/badge/npj-Digital_Medicine-red)](https://doi.org/10.1038/s41746-025-01852-3)
 [![arXiv](https://img.shields.io/badge/arXiv-2506.08900-red?logo=arXiv&logoColor=white)](https://arxiv.org/abs/2506.08900)
 [![HF](https://img.shields.io/badge/🤗_Hugging_Face-MIRAGE-blue)](https://huggingface.co/j-morano/models)
 [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC_BY--NC--ND_4.0-darkgreen.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
@@ -20,7 +20,7 @@
 This repository contains the official code for the paper, ["MIRAGE: A multimodal foundation model and benchmark for comprehensive retinal OCT image analysis"](https://arxiv.org/abs/2506.08900), led by [José Morano](https://scholar.google.com/citations?user=jVt2tI4AAAAJ&hl=en) and [Hrvoje Bogunović](https://scholar.google.com/citations?user=0pPVZz4AAAAJ&hl=en), from the [CD-AIR lab](https://www.meduniwien.ac.at/web/en/forschung/forschungsprojekte/christian-doppler-labors/christian-doppler-laboratory-for-artificial-intelligence-in-retina/) of the [Medical University of Vienna](https://www.meduniwien.ac.at/web/en/). The paper has been accepted for publication in **npj Digital Medicine**.
 
 
-#### [[`arXiv`](https://arxiv.org/abs/2506.08900)]
+#### [[`arXiv`](https://arxiv.org/abs/2506.08900)] [[`npj Digital Medicine`](https://doi.org/10.1038/s41746-025-01852-3)]
 <br>
 
 
