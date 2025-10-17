@@ -248,7 +248,8 @@ def to_tensor(fn):
     fn = str(fn)
     if fn.endswith('.jpeg') or fn.endswith('.jpg') or fn.endswith('.png'):
         img = io.imread(fn)
-        img = img[..., 0]
+        if img.ndim == 3:
+            img = img[..., 0]
     elif fn.endswith('.npy'):
         img = np.load(fn)
     else:
