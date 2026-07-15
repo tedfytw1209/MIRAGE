@@ -21,7 +21,7 @@ from mutils import misc
 from mutils.classification import EarlyStopping
 from mutils.classification_uf import train_1_epoch_uf, evaluate_uf
 from mutils.metrics_uf import safe_for_wandb
-from mutils.misc import fix_seeds, SortingHelpFormatter
+from mutils.misc import fix_seeds, SortingHelpFormatter, subsample_class_balanced
 from mutils.dataset_uf import UFCohortDataset
 from fm_cls_config import fm_config_factory
 
@@ -218,6 +218,18 @@ def get_args():
             ' holdover from OphMAE/OphFoundation, the image itself is SLO,'
             ' not color fundus photography) (default: %(default)s)',
     )
+    parser.add_argument(
+        '--new_subset_num', default=0, type=int,
+        help='If > 0, subsample the train split down to this many samples'
+            ' total, class-balanced proportionally to each class\'s share of'
+            ' the full train split (every class keeps at least one sample).'
+            ' 0 disables subsampling. (default: %(default)s)',
+    )
+    parser.add_argument(
+        '--subsetseed', default=42, type=int,
+        help='Random seed used for --new_subset_num class-balanced'
+            ' sampling (independent of --seed). (default: %(default)s)',
+    )
 
     # wandb
     parser.add_argument(
@@ -361,6 +373,7 @@ def main(args):
         'input_size', 'layer_decay', 'linear_probing', 'lr', 'min_lr', 'model',
         'affine', 'pool', 'smoothing', 'start_epoch', 'val_metric',
         'val_metric_two', 'warmup_epochs', 'weight_decay', 'uf_modality',
+        'new_subset_num', 'subsetseed',
     ]
     for key in list(args_vars.keys()):
         if key not in model_config_keys:
@@ -421,6 +434,14 @@ def main(args):
             build_transform=model_config.build_transform,
             augment=augment_train
         )
+        print(f'Number of training samples: {len(dataset_train)}')
+
+        if args.new_subset_num > 0:
+            dataset_train = subsample_class_balanced(
+                dataset_train, args.new_subset_num, args.subsetseed
+            )
+            print(f'Number of training samples after subsampling: {len(dataset_train)}')
+
         train_loader = DataLoader(
             dataset_train,
             shuffle=shuffle,
@@ -429,7 +450,6 @@ def main(args):
             pin_memory=args.pin_mem,
             drop_last=False,
         )
-        print(f'Number of training samples: {len(dataset_train)}')
 
         dataset_val = build_dataset(
             subset='val',

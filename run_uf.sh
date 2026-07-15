@@ -44,4 +44,8 @@ UF_CSV="/orange/ruogu.fang/tienyuchang/OCTRFF_Data/data/UF-cohort/${DATA_TYPE}/s
         MIRAGE_UF_result \
     --wandb_mode \
         online
+    # To fine-tune on a class-balanced subsample of the train split (e.g.
+    #   for a data-efficiency/few-shot sweep), add:
+    #   --new_subset_num 100 \
+    #   --subsetseed 42 \
 exit

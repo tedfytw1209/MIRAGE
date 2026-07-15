@@ -126,6 +126,19 @@ classification head previously just hard-asserted a single input domain.
 Same required arguments as `run_cls_tuning_UF.py` minus `--uf_modality`
 (always both domains):
 
+### Subsampling the train split
+
+Both UF scripts support `--new_subset_num` for data-efficiency/few-shot
+sweeps: if set to a value > 0, the train split is subsampled down to that
+many samples total, class-balanced proportionally to each class's share of
+the full train split (every class keeps at least one sample; a class with
+fewer samples than its computed share just keeps all of it). `--subsetseed`
+(default `42`) seeds this sampling independently of `--seed`, so the same
+subset can be reused across different training seeds. It's disabled by
+default (`--new_subset_num 0`), which uses the full train split unchanged.
+Val/test splits are never subsampled. See `mutils.misc.subsample_class_balanced`
+for the implementation.
+
 ```bash
 ./runner python run_cls_tuning_UF_multimodaliy.py \
     --runners 1 \
