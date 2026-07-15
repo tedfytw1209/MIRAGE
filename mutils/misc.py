@@ -96,7 +96,7 @@ def load_model(args, model, optimizer, loss_scaler=None):
                 args.resume, map_location='cpu', check_hash=True
             )
         else:
-            checkpoint = torch.load(args.resume, map_location='cpu')
+            checkpoint = torch.load(args.resume, map_location='cpu', weights_only=False)
         model.load_state_dict(checkpoint['model'])
         print('Resume checkpoint %s' % args.resume)
         if (
