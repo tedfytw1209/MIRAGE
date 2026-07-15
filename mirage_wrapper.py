@@ -192,7 +192,7 @@ class MIRAGEClsGlobal(MIRAGEWrapper):
     def __init__(self, num_classes=0, *args, **kwargs):
         super().__init__(*args, **kwargs)
         assert num_classes > 0
-        assert len(self.args.in_domains) == 1
+        assert len(self.args.in_domains) >= 1
         self.num_classes = num_classes
         self.model.output_adapters = None
         # Get the embedding dimension from the first layer norm of the
@@ -208,13 +208,16 @@ class MIRAGEClsGlobal(MIRAGEWrapper):
     def forward(self, x):
         """
         Args:
-            x: (B, C, H, W) tensor. H and W are determined by the
-            input_size parameter in the constructor. It expects a tensor
-            in the range [0, 1].
+            x: either a (B, C, H, W) tensor for the single modality in
+            `in_domains[0]`, or a Dict[domain, (B, C, H, W) tensor] when
+            `in_domains` has more than one entry (true multi-modal
+            classification: tokens from every domain are concatenated and
+            jointly attended to by the shared encoder before pooling).
+            Tensors are expected in the range [0, 1].
         Returns:
-            (B, C, H, W) tensor
+            (B, num_classes) tensor
         """
-        x_d = {self.args.in_domains[0]: x}
+        x_d = x if isinstance(x, dict) else {self.args.in_domains[0]: x}
         out, _masks = self.model(x_d, mask_inputs=False)
         out = self.norm(out)
         out = self.pool(out)

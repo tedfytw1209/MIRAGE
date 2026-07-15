@@ -137,11 +137,16 @@ class MIRAGEFM(FoundModel):
         if args.input_size is None:
             args.input_size = 512
 
+        # NOTE: `uf_modality` is only set by run_cls_tuning_UF.py ('bscan' or
+        #   'slo') and run_cls_tuning_UF_multimodaliy.py (fixed 'bscan-slo');
+        #   every other benchmark keeps the original 'bscan'-only behavior.
+        modalities = getattr(args, 'uf_modality', 'bscan')
+
         self.model = miragecls_factory[self.args.pool](
             input_size=args.input_size,
             patch_size=32,
             num_classes=args.num_classes,
-            modalities='bscan',
+            modalities=modalities,
             # NOTE: weights are loaded in the model
             weights=args.weights,
         )
