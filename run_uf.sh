@@ -26,8 +26,8 @@ UF_CSV="/orange/ruogu.fang/tienyuchang/OCTRFF_Data/data/UF-cohort/${DATA_TYPE}/s
     --version v1 \
     --seed 0 \
     --weights \
-        ./__weights/MIRAGE-Base.pth \
-        ./__weights/MIRAGE-Large.pth \
+        /orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Base.pth \
+        /orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Large.pth \
     --linear_probing \
     --data_root \
         $DATA_ROOT \
@@ -37,6 +37,8 @@ UF_CSV="/orange/ruogu.fang/tienyuchang/OCTRFF_Data/data/UF-cohort/${DATA_TYPE}/s
         $UF_CSV \
     --data_set \
         UF-${TASK} \
+    --base_output_dir \
+        /orange/ruogu.fang/tienyuchang/MIRAGE_results/cls_uf \
     --uf_modality \
         bscan \
         slo \

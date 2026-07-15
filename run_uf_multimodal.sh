@@ -37,6 +37,8 @@ UF_CSV="/orange/ruogu.fang/tienyuchang/OCTRFF_Data/data/UF-cohort/${DATA_TYPE}/s
         $UF_CSV \
     --data_set \
         UF-${TASK}-mm \
+    --base_output_dir \
+        /orange/ruogu.fang/tienyuchang/MIRAGE_results/cls_uf_mm \
     --wandb_project \
         MIRAGE_UF_result_mm \
     --wandb_mode \
