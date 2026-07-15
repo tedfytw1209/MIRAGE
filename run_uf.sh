@@ -12,8 +12,14 @@ source ./venv/bin/activate
 #   OphFoundation).
 DATA_TYPE="IRB2024_v5"
 TASK=${1:-"Glaucoma"}  # AMD, Cataract, DR, Glaucoma, DR_binary, Glaucoma_binary
+LINEAR_PROBING=${2:-true}  # true: freeze encoder (linear probe); false: full fine-tune
 DATA_ROOT="/orange/ruogu.fang/tienyuchang/IRB2024_imgs_paired/"
 UF_CSV="/orange/ruogu.fang/tienyuchang/OCTRFF_Data/data/UF-cohort/${DATA_TYPE}/split/tune5-eval5/${TASK}_all_split.csv"
+
+LINEAR_PROBING_FLAG=""
+if [ "$LINEAR_PROBING" = "true" ]; then
+    LINEAR_PROBING_FLAG="--linear_probing"
+fi
 
 # Metrics/wandb logging follow OphFoundation's own evaluate_model/wandb
 #   convention (macro-averaged, 0-100 scaled; see mutils/metrics_uf.py).
@@ -28,7 +34,7 @@ UF_CSV="/orange/ruogu.fang/tienyuchang/OCTRFF_Data/data/UF-cohort/${DATA_TYPE}/s
     --weights \
         /orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Base.pth \
         /orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Large.pth \
-    --linear_probing \
+    $LINEAR_PROBING_FLAG \
     --data_root \
         $DATA_ROOT \
     --csv_file_train \

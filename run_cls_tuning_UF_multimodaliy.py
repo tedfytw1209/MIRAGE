@@ -163,14 +163,18 @@ def get_args():
             ' loss to improve before stopping. (default: %(default)s)',
     )
     parser.add_argument(
-        '--early_stopping_delta', default=0.001, type=float,
+        '--early_stopping_delta', default=0.1, type=float,
         help='Parameter to specify the minimum change in the validation metric'
-            ' required to consider it an improvement. (default: %(default)s)',
+            ' required to consider it an improvement. Metrics here are on a'
+            ' 0-100 scale (mutils.metrics_uf), so 0.1 is 0.1 percentage'
+            ' points. (default: %(default)s)',
     )
     parser.add_argument(
-        '--early_stopping_delta_two', default=0.001, type=float,
+        '--early_stopping_delta_two', default=0.1, type=float,
         help='Parameter to specify the minimum change in the validation metric two'
-            ' required to consider it an improvement. (default: %(default)s)',
+            ' required to consider it an improvement. Metrics here are on a'
+            ' 0-100 scale (mutils.metrics_uf), so 0.1 is 0.1 percentage'
+            ' points. (default: %(default)s)',
     )
     parser.add_argument(
         '--early_start_from', default=20, type=int,
@@ -420,10 +424,19 @@ def main(args):
         print('Dry run. Exiting.')
         sys.exit(0)
 
+    # Tag/name wandb runs so they're filterable/sortable by the axes that
+    #   actually vary across a sweep (task, model size, modality, probing
+    #   mode), not just the opaque args checksum. This script always feeds
+    #   both domains at once, so the modality tag is fixed to 'multimodal'
+    #   (see run_cls_tuning_UF.py's --uf_modality tag for the single-domain
+    #   counterpart).
+    probe_tag = 'linear' if args.linear_probing else 'finetune'
+    wandb_tags = [args.data_set, model_name, 'multimodal', probe_tag]
     wandb.init(
         project=args.wandb_project,
-        name=f'{args.data_set}-{model_name}-seed{args.seed}-{args_checksum}',
+        name=f'{args.data_set}-{model_name}-multimodal-{probe_tag}-seed{args.seed}-{args_checksum}',
         mode=args.wandb_mode,
+        tags=wandb_tags,
         config=vars(args),
     )
 
