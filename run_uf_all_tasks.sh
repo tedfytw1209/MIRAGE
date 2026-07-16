@@ -1,26 +1,17 @@
+#! /bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --partition=hpg-b200
+#SBATCH --mem=128GB
+#SBATCH --cpus-per-task=32
+#SBATCH --gpus=1
+#SBATCH --time=12:00:00
+#SBATCH --output=%x.%j.out
+#SBATCH --account=ruogu.fang
+#SBATCH --qos=ruogu.fang
 
 source ./venv/bin/activate
 
-
-# Sweep across all 18 UF-cohort tasks x every modality configuration
-#   (bscan, slo, true multi-modal) x both MIRAGE sizes (Base, Large) x
-#   both probing modes (full fine-tune and --linear_probing, encoder
-#   frozen -- the paper's own setup). run_uf.sh / run_uf_multimodal.sh
-#   cover the same two scripts for a single task/probing-mode at a time;
-#   this one runs everything.
-#
-# A single run only uses ~3% of GPU memory, so per task all 4 `./runner`
-#   calls below (fine-tune-single, fine-tune-multimodal,
-#   linear-probe-single, linear-probe-multimodal) are launched
-#   concurrently: single-modality ones fan out over --uf_modality
-#   bscan/slo x --weights Base/Large (4 combinations, `--runners 4`),
-#   multi-modal ones over --weights Base/Large (2 combinations,
-#   `--runners 2`). That's up to 4+2+4+2 = 12 concurrent processes per
-#   task (~36% of GPU memory), backgrounded together and waited on
-#   before moving to the next task. Tasks themselves are looped
-#   sequentially -- lower/raise the --runners counts, or drop the `wait`
-#   between tasks, to trade off cross-task concurrency vs. memory
-#   headroom on your node.
 DATA_TYPE="IRB2024_v5"
 DATA_ROOT="/orange/ruogu.fang/tienyuchang/IRB2024_imgs_paired/"
 WEIGHTS_BASE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Base.pth"
