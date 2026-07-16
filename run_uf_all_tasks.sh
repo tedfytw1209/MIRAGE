@@ -31,9 +31,13 @@ WEIGHTS_LARGE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Large.pth"
 #   AMD:2 Cataract:2 DR:6 Glaucoma:6 DR_binary:2 Glaucoma_binary:2
 #   DME:5 CSR:2 Drusen:2 ERM:2 MH:2 CRVO_CRAO:2 PVD:2 RNV:2 DME_binary:2
 #   PD:2 DKD:2 Diabetes:2
+#TASKS=(
+#    AMD Cataract DR Glaucoma DR_binary Glaucoma_binary
+#    DME CSR Drusen ERM MH CRVO_CRAO PVD RNV DME_binary
+#    PD DKD Diabetes
+#)
 TASKS=(
-    AMD Cataract DR Glaucoma DR_binary Glaucoma_binary
-    DME CSR Drusen ERM MH CRVO_CRAO PVD RNV DME_binary
+    CRVO_CRAO PVD RNV DME_binary
     PD DKD Diabetes
 )
 
