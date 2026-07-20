@@ -57,6 +57,33 @@ You can specify a different output directory using the `--base_output_dir` argum
 To add a new dataset, you need to respect the dataset structure indicated in [docs/classification_benchmark.md](../docs/classification_benchmark.md).
 
 
+## Public fundus and OCT B-scan benchmark scripts
+
+`run_cls_tuning_fundus.py` and `run_cls_tuning_bscan.py` are dedicated
+entry points for two families of public benchmark datasets referenced from
+[OphFoundation](https://github.com/franciszchen/OphFoundation)'s own
+finetuning scripts. Both still use MIRAGE's "public dataset setting"
+(pre-split `train/val/test/Class_x/` image folders, see
+[docs/classification_benchmark.md](../docs/classification_benchmark.md)) —
+not OphFoundation's CSV/fold-split pipeline.
+
+- `run_cls_tuning_fundus.py`: for color fundus photo datasets (e.g.
+  `Glaucoma_fundus`, `IDRiD_data`, `JSIEC`, `MESSIDOR2`, `PAPILA`, `Retina`,
+  `APTOS2019`). MIRAGE has no dedicated `fundus` domain, so images are
+  routed through `slo`, the only other en-face 2D domain — see
+  `mirage_wrapper.DOMAIN_CONF`. Its input adapter is single-channel by
+  architecture, so this is a cross-domain transfer evaluation, not a
+  full-fidelity color setup.
+- `run_cls_tuning_bscan.py`: for public OCT B-scan benchmark datasets (e.g.
+  `duke14`, `glaucoma`, `oimhs`, `umn`). Uses MIRAGE's default `bscan`
+  domain — functionally the same data pipeline as `run_cls_tuning.py`,
+  just a dedicated entry point for these datasets.
+
+Both scripts take the same `--weights`/`--data_root`/`--data_set` arguments
+as `run_cls_tuning.py`. See `run_fundus.sh`/`run_bscan.sh` for ready-to-edit
+copies of these commands.
+
+
 ## UF cohort (CSV-driven datasets)
 
 The UF cohort dataset (and any dataset following the same CSV schema, as used
