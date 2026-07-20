@@ -220,7 +220,7 @@ def get_args():
 
     # UF cohort parameters
     parser.add_argument(
-        '--data_set', default='UF-cohort-mm', type=str,
+        '--data_set', default='UF-cohort', type=str,
         help='Free-form label for the experiment (used in the output'
             ' directory name only; does not affect data loading).'
             ' (default: %(default)s)',

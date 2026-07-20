@@ -87,7 +87,7 @@ launch_multimodal() {
         --csv_file_test \
             $UF_CSV \
         --data_set \
-            UF-${TASK}-mm \
+            UF-${TASK} \
         --base_output_dir \
             /orange/ruogu.fang/tienyuchang/MIRAGE_results/cls_uf_mm \
         --wandb_project \
