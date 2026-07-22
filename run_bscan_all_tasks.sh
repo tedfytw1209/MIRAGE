@@ -64,4 +64,4 @@ for DATASET in "${DATASETS[@]}"; do
     wait "${PIDS[@]}"
     echo "=== Dataset ${DATASET} done ==="
 done
-exit
+
