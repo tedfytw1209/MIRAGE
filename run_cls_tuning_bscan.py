@@ -6,6 +6,15 @@ finetune-UF-benchmark_*_single.sh scripts. Functionally identical to
 run_cls_tuning.py (which already defaults every dataset to MIRAGE's 'bscan'
 domain): datasets are pre-split train/val/test/Class_x/ image folders (see
 docs/classification_benchmark.md), loaded with torchvision's ImageFolder.
+
+IMPORTANT: OphFoundation's own raw data for these datasets is volumetric --
+one CSV row per volume, dynamically resampled to 20 slices per volume at
+load time (see util/datasets_oct_pub.py's OCT3D_DUKE_Dataset in the
+OphFoundation repo). Each Class_x/ file here must be ONE selected slice per
+volume, not every raw slice PNG: ImageFolder has no concept of "volume", so
+pointing it at the raw per-slice folders directly would treat every slice
+as its own independent sample and break the intended train/val/test split
+by volume/patient.
 """
 from typing import Callable
 from copy import deepcopy

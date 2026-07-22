@@ -19,6 +19,10 @@ LINEAR_PROBING=${2:-true}  # true: freeze encoder (linear probe); false: full fi
 
 # EDIT ME: root containing pre-split train/val/test/Class_x/ folders for
 #   these public OCT B-scan datasets (see docs/classification_benchmark.md).
+#   IMPORTANT: OphFoundation's own raw data is volumetric (one CSV row per
+#   volume, resampled to 20 slices at load time -- see the caveat in
+#   run_cls_tuning_bscan.py's module docstring). Each Class_x/ file here
+#   must be ONE selected slice per volume, not every raw slice PNG.
 DATA_ROOT="/orange/ruogu.fang/tienyuchang/MIRAGE_data/cls_bscan_public/"
 
 LINEAR_PROBING_FLAG=""
