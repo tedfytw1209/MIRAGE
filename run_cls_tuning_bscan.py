@@ -18,7 +18,6 @@ run_bscan_all_tasks.sh), not done automatically by this script.
 from typing import Callable
 from copy import deepcopy
 import json
-import os
 import sys
 import hashlib
 
