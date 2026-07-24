@@ -59,6 +59,8 @@ for DATASET in "${DATASETS[@]}"; do
     echo "=== Dataset ${DATASET} done ==="
 done
 
+# OCT B-scan datasets
+
 DATA_ROOT="/orange/ruogu.fang/tienyuchang/MIRAGE_data/cls_bscan_public/"
 WEIGHTS_BASE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Base.pth"
 WEIGHTS_LARGE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Large.pth"
