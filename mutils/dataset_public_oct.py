@@ -39,7 +39,14 @@ def _middle_slice_index(row) -> int:
 def _resolve_image_path(root_dir: Path, row) -> Path:
     slice_index = _middle_slice_index(row)
     folder_dir = root_dir / str(row['folder'])
-    base_name = str(row['oct_imgname']) % slice_index
+    oct_imgname = str(row['oct_imgname'])
+    try:
+        base_name = oct_imgname % slice_index
+    except (TypeError, ValueError) as e:
+        raise ValueError(
+            f"Failed to format oct_imgname={oct_imgname!r} with slice_index="
+            f"{slice_index!r} (folder={row['folder']!r}): {e}"
+        ) from e
     for ext in IMAGE_EXTENSIONS:
         candidate = folder_dir / f'{base_name}{ext}'
         if candidate.exists():
