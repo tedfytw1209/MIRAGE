@@ -12,9 +12,10 @@
 
 source ./venv/bin/activate
 
-# EDIT ME: root containing pre-split train/val/test/Class_x/ folders for
-#   these public fundus datasets (see docs/classification_benchmark.md).
-DATA_ROOT="/orange/ruogu.fang/tienyuchang/MIRAGE_data/cls_fundus_public/"
+# Root containing pre-split train/val/test/Class_x/ folders for these
+#   public fundus datasets, per OphFoundation's reference benchmark script
+#   (dataset_dir/dataset_name/{train,val,test}/Class_x/).
+DATA_ROOT="/orange/ruogu.fang/tienyuchang/OCTRFF_Data/benchmark/"
 WEIGHTS_BASE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Base.pth"
 WEIGHTS_LARGE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Large.pth"
 

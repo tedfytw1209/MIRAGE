@@ -22,9 +22,10 @@ source ./venv/bin/activate
 #   loop (run_fundus_all_tasks.sh).
 LINEAR_PROBING=${1:-true}  # true: freeze encoder (linear probe); false: full fine-tune
 
-# EDIT ME: root containing pre-split train/val/test/Class_x/ folders for
-#   these public fundus datasets (see docs/classification_benchmark.md).
-DATA_ROOT="/orange/ruogu.fang/tienyuchang/MIRAGE_data/cls_fundus_public/"
+# Root containing pre-split train/val/test/Class_x/ folders for these
+#   public fundus datasets, per OphFoundation's reference benchmark script
+#   (dataset_dir/dataset_name/{train,val,test}/Class_x/).
+DATA_ROOT="/orange/ruogu.fang/tienyuchang/OCTRFF_Data/benchmark/"
 
 LINEAR_PROBING_FLAG=""
 if [ "$LINEAR_PROBING" = "true" ]; then
