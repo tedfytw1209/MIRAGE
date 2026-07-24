@@ -62,26 +62,35 @@ To add a new dataset, you need to respect the dataset structure indicated in [do
 `run_cls_tuning_fundus.py` and `run_cls_tuning_bscan.py` are dedicated
 entry points for two families of public benchmark datasets referenced from
 [OphFoundation](https://github.com/franciszchen/OphFoundation)'s own
-finetuning scripts. Both still use MIRAGE's "public dataset setting"
-(pre-split `train/val/test/Class_x/` image folders, see
-[docs/classification_benchmark.md](../docs/classification_benchmark.md)) —
-not OphFoundation's CSV/fold-split pipeline.
+finetuning scripts. They use two *different* data conventions, matching how
+each family is actually organized on disk:
 
 - `run_cls_tuning_fundus.py`: for color fundus photo datasets (e.g.
   `Glaucoma_fundus`, `IDRiD_data`, `JSIEC`, `MESSIDOR2`, `PAPILA`, `Retina`,
-  `APTOS2019`). MIRAGE has no dedicated `fundus` domain, so images are
-  routed through `slo`, the only other en-face 2D domain — see
-  `mirage_wrapper.DOMAIN_CONF`. Its input adapter is single-channel by
+  `APTOS2019`). Uses MIRAGE's "public dataset setting" — pre-split
+  `train/val/test/Class_x/` image folders under `--data_root` (see
+  [docs/classification_benchmark.md](../docs/classification_benchmark.md)),
+  loaded with plain `ImageFolder`. MIRAGE has no dedicated `fundus` domain,
+  so images are routed through `slo`, the only other en-face 2D domain —
+  see `mirage_wrapper.DOMAIN_CONF`. Its input adapter is single-channel by
   architecture, so this is a cross-domain transfer evaluation, not a
   full-fidelity color setup.
-- `run_cls_tuning_bscan.py`: for public OCT B-scan benchmark datasets (e.g.
-  `duke14`, `glaucoma`, `oimhs`, `umn`). Uses MIRAGE's default `bscan`
-  domain — functionally the same data pipeline as `run_cls_tuning.py`,
-  just a dedicated entry point for these datasets.
+- `run_cls_tuning_bscan.py`: for public OCT B-scan benchmark datasets
+  `duke14`, `glaucoma`, `oimhs`, `umn`. These are **not** pre-split image
+  folders — the raw data is volumetric (one CSV row per volume) — so this
+  script reads OphFoundation's own CSV/fold-split convention directly via
+  `mutils/dataset_public_oct.py`'s `PublicOCTBscanDataset`, which selects
+  the middle slice of each volume as its one representative 2D image
+  (MIRAGE's classification head only accepts a single image per sample).
+  Takes `--data_root` (raw per-dataset image folders, e.g.
+  `.../OCTCubeM/assets/ext_oph_datasets/`), `--csv_root` (fold-split CSV
+  base, e.g. `.../OphFoundation/Public_OCT_split/`), and `--fold` (default
+  `0`; selects which pre-computed train/val/test partition to use — looping
+  over all 10 folds is left to the caller, see `run_bscan_all_tasks.sh`).
+  Uses MIRAGE's default `bscan` domain.
 
-Both scripts take the same `--weights`/`--data_root`/`--data_set` arguments
-as `run_cls_tuning.py`. See `run_fundus.sh`/`run_bscan.sh` for ready-to-edit
-copies of these commands.
+See `run_fundus.sh`/`run_bscan.sh` for ready-to-edit copies of these
+commands.
 
 
 ## UF cohort (CSV-driven datasets)
