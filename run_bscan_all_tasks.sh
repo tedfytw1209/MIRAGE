@@ -12,24 +12,23 @@
 
 source ./venv/bin/activate
 
-# EDIT ME: root containing pre-split train/val/test/Class_x/ folders for
-#   these public OCT B-scan datasets (see docs/classification_benchmark.md).
-#   IMPORTANT: OphFoundation's own raw data for these datasets is volumetric
-#   (one CSV row per volume, dynamically resampled to 20 slices per volume --
-#   see util/datasets_oct_pub.py's OCT3D_DUKE_Dataset/_select_fixed_count in
-#   the OphFoundation repo). Each Class_x/ file here must be ONE selected
-#   slice per volume, not every raw slice PNG -- pointing this at the raw
-#   per-slice folders directly would make ImageFolder treat every slice as
-#   its own independent sample and break the intended train/val/test split
-#   by volume/patient.
-DATA_ROOT="/orange/ruogu.fang/tienyuchang/MIRAGE_data/cls_bscan_public/"
+# Root containing the raw per-dataset OCT volume/slice image folders (one
+#   subfolder per class, e.g. duke14_processed/{AMD,DME,NORMAL}) --
+#   see mutils/dataset_public_oct.py for the exact per-dataset subdirectory
+#   layout and CSV/fold-split convention. --fold 0 uses the first
+#   pre-computed train/val/test partition; looping over multiple folds is
+#   not done here (staged rollout -- add a fold loop only once fold 0 is
+#   validated).
+DATA_ROOT="/orange/ruogu.fang/tienyuchang/OCTCubeM/assets/ext_oph_datasets/"
+CSV_ROOT="/blue/ruogu.fang/tienyuchang/OphFoundation/Public_OCT_split/"
+FOLD=0
 WEIGHTS_BASE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Base.pth"
 WEIGHTS_LARGE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Large.pth"
 
 # 4 datasets (per OphFoundation's finetune-UF-benchmark_*_single.sh
-#   reference scripts, which benchmark these same public OCT datasets via
-#   their own CSV/fold pipeline). num_classes is auto-inferred by
-#   run_cls_tuning_bscan.py from the folder structure, not passed here.
+#   reference scripts). num_classes is auto-inferred by
+#   run_cls_tuning_bscan.py from each dataset's fold-split CSV, not passed
+#   here.
 DATASETS=(duke14 glaucoma oimhs umn)
 
 # $1: PROBE_FLAG ("" for full fine-tune, "--linear_probing" otherwise)
@@ -48,6 +47,10 @@ launch() {
         $PROBE_FLAG \
         --data_root \
             $DATA_ROOT \
+        --csv_root \
+            $CSV_ROOT \
+        --fold \
+            $FOLD \
         --data_set \
             $DATASET \
         --base_output_dir \

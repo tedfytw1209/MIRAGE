@@ -20,18 +20,18 @@ source ./venv/bin/activate
 #   multi-value flags, but can't fan out a flag's presence/absence, so
 #   both modes in one script still needs the bash loop (run_bscan_all_tasks.sh).
 #
-# Datasets follow MIRAGE's "public dataset setting": pre-split
-#   train/val/test/Class_x/ image folders under --data_root (see
-#   docs/classification_benchmark.md). IMPORTANT: OphFoundation's own raw
-#   data is volumetric (one CSV row per volume, resampled to 20 slices at
-#   load time -- see the caveat in run_cls_tuning_bscan.py's module
-#   docstring). Each Class_x/ file here must be ONE selected slice per
-#   volume, not every raw slice PNG.
+# Datasets follow the CSV/fold-split convention (see
+#   mutils/dataset_public_oct.py): raw per-slice volume folders under
+#   --data_root, plus a fold-split CSV under --csv_root that assigns each
+#   volume to train/val/test and gives its integer label. --fold 0 uses the
+#   first pre-computed partition (see run_cls_tuning_bscan.py's module
+#   docstring for why looping over folds isn't done automatically).
 LINEAR_PROBING=${1:-true}  # true: freeze encoder (linear probe); false: full fine-tune
 
-# EDIT ME: root containing pre-split train/val/test/Class_x/ folders for
-#   these public OCT B-scan datasets (see docs/classification_benchmark.md).
-DATA_ROOT="/orange/ruogu.fang/tienyuchang/MIRAGE_data/cls_bscan_public/"
+# Root containing the raw per-dataset OCT volume/slice image folders.
+DATA_ROOT="/orange/ruogu.fang/tienyuchang/OCTCubeM/assets/ext_oph_datasets/"
+CSV_ROOT="/blue/ruogu.fang/tienyuchang/OphFoundation/Public_OCT_split/"
+FOLD=0
 
 LINEAR_PROBING_FLAG=""
 if [ "$LINEAR_PROBING" = "true" ]; then
@@ -39,9 +39,9 @@ if [ "$LINEAR_PROBING" = "true" ]; then
 fi
 
 # 4 datasets (per OphFoundation's finetune-UF-benchmark_*_single.sh
-#   reference scripts, which benchmark these same public OCT datasets via
-#   their own CSV/fold pipeline). num_classes is auto-inferred by
-#   run_cls_tuning_bscan.py from the folder structure, not passed here.
+#   reference scripts). num_classes is auto-inferred by
+#   run_cls_tuning_bscan.py from each dataset's fold-split CSV, not passed
+#   here.
 ./runner python run_cls_tuning_bscan.py \
     --runners 8 \
     -- \
@@ -53,6 +53,10 @@ fi
     $LINEAR_PROBING_FLAG \
     --data_root \
         $DATA_ROOT \
+    --csv_root \
+        $CSV_ROOT \
+    --fold \
+        $FOLD \
     --data_set \
         duke14 \
         glaucoma \
