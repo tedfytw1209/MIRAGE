@@ -1,20 +1,19 @@
 """Public OCT B-scan dataset classification tuning.
 
-Dedicated entry point for the public OCT B-scan benchmark datasets (e.g.
-duke14, glaucoma, oimhs, umn) referenced from OphFoundation's own
-finetune-UF-benchmark_*_single.sh scripts. Functionally identical to
-run_cls_tuning.py (which already defaults every dataset to MIRAGE's 'bscan'
-domain): datasets are pre-split train/val/test/Class_x/ image folders (see
-docs/classification_benchmark.md), loaded with torchvision's ImageFolder.
+Dedicated entry point for OphFoundation's public OCT B-scan benchmark
+datasets (duke14, glaucoma, oimhs, umn), referenced from OphFoundation's own
+finetune-UF-benchmark_*_single.sh scripts.
 
-IMPORTANT: OphFoundation's own raw data for these datasets is volumetric --
-one CSV row per volume, dynamically resampled to 20 slices per volume at
-load time (see util/datasets_oct_pub.py's OCT3D_DUKE_Dataset in the
-OphFoundation repo). Each Class_x/ file here must be ONE selected slice per
-volume, not every raw slice PNG: ImageFolder has no concept of "volume", so
-pointing it at the raw per-slice folders directly would treat every slice
-as its own independent sample and break the intended train/val/test split
-by volume/patient.
+Unlike run_cls_tuning_fundus.py (plain train/val/test/Class_x/ image
+folders), these 4 datasets' raw data is volumetric: one CSV row per volume,
+with a '%02d'-style filename template and a dash-separated list of slice
+indices (see mutils/dataset_public_oct.py for the exact schema). This script
+reads that CSV/fold convention directly via PublicOCTBscanDataset, which
+selects the middle slice of each volume as its one representative 2D image
+-- consistent with MIRAGE's classification head accepting a single image
+per sample. --fold selects which pre-computed fold-split CSV to use
+(default 0); looping over multiple folds is left to the caller (see
+run_bscan_all_tasks.sh), not done automatically by this script.
 """
 from typing import Callable
 from copy import deepcopy
@@ -34,13 +33,39 @@ import torch
 from torch.utils.data import DataLoader
 
 from timm.loss import LabelSmoothingCrossEntropy
-from torchvision import datasets
 
 from mutils import misc
 from mutils.classification import train_1_epoch, evaluate, EarlyStopping
+from mutils.dataset_public_oct import PublicOCTBscanDataset
 from mutils.misc import fix_seeds, SortingHelpFormatter
 from fm_cls_config import fm_config_factory
 
+
+# Per-dataset raw image subdirectory (under --data_root) and fold-split CSV
+# location (under --csv_root), per OphFoundation's
+# finetune-UF-benchmark_*_single.sh reference scripts.
+PUBLIC_OCT_DATASETS = {
+    'duke14': {
+        'image_subdir': 'DUKE_14_Srin/duke14_processed',
+        'csv_subdir': 'finetune_duke14_fewshot_3D_10folds_effective_fold',
+        'csv_pattern': 'duke14_fold_split{fold}.csv',
+    },
+    'glaucoma': {
+        'image_subdir': 'GLAUCOMA/glaucoma_processed',
+        'csv_subdir': 'finetune_glaucoma_fewshot_3D_10folds_correct_visit',
+        'csv_pattern': 'glaucoma_fold_{fold}_split.csv',
+    },
+    'oimhs': {
+        'image_subdir': 'OIMHS_dataset/cls_images',
+        'csv_subdir': 'finetune_oimhs_fewshot_3D_10folds_correct_',
+        'csv_pattern': 'oimhs_fold_{fold}_split_ref.csv',
+    },
+    'umn': {
+        'image_subdir': 'UMN/UMN_dataset/image_classification',
+        'csv_subdir': 'finetune_umn_fewshot_3D_10folds_correct',
+        'csv_pattern': 'umn_fold_{fold}_split_ref.csv',
+    },
+}
 
 
 def get_args():
@@ -137,6 +162,11 @@ def get_args():
         help='Seed for reproducibility. (default: %(default)s)',
     )
     parser.add_argument(
+        '--fold', default=0, type=int,
+        help='Which pre-computed fold-split CSV to use (0-9).'
+            ' (default: %(default)s)',
+    )
+    parser.add_argument(
         '--start_epoch', default=0, type=int, metavar='N',
         help='Start epoch. (default: %(default)s)',
     )
@@ -220,13 +250,23 @@ def get_args():
         '--data_root',
         type=str,
         required=True,
-        help='Root directory for the classification datasets. (required)',
+        help='Root directory containing the raw per-dataset image folders'
+            ' (e.g. .../OCTCubeM/assets/ext_oph_datasets/). (required)',
+    )
+    required_parser.add_argument(
+        '--csv_root',
+        type=str,
+        required=True,
+        help='Root directory containing the per-dataset fold-split CSV'
+            ' directories (e.g. .../OphFoundation/Public_OCT_split/).'
+            ' (required)',
     )
     required_parser.add_argument(
         '--data_set',
         type=str,
         required=True,
-        help='Dataset directory name. (required)',
+        choices=sorted(PUBLIC_OCT_DATASETS.keys()),
+        help='Dataset name. (required)',
     )
 
     return parser.parse_args()
@@ -238,20 +278,20 @@ def process_args(args):
 
     if args.data_root[-1] != '/':
         args.data_root += '/'
-    args.data_path = args.data_root + args.data_set
+    if args.csv_root[-1] != '/':
+        args.csv_root += '/'
 
-    # Automatic number of classes calculation
-    train_data_path = args.data_path + '/train'
-    num_classes = 0
-    for class_dir in Path(train_data_path).iterdir():
-        if class_dir.is_dir():
-            num_classes += 1
-    num_samples = 0
-    for class_dir in Path(train_data_path).iterdir():
-        if class_dir.is_dir():
-            num_samples += len(list(class_dir.iterdir()))
-    args.num_classes = num_classes
-    print(f'Number of classes: {num_classes}')
+    dataset_config = PUBLIC_OCT_DATASETS[args.data_set]
+    args.image_root = args.data_root + dataset_config['image_subdir']
+    csv_dir = args.csv_root + dataset_config['csv_subdir']
+    args.csv_file = csv_dir + '/' + dataset_config['csv_pattern'].format(fold=args.fold)
+
+    # Automatic number of classes calculation from the CSV's label column
+    data_frame = pd.read_csv(args.csv_file)
+    train_frame = data_frame[data_frame['split'] == 'train']
+    args.num_classes = int(train_frame['label'].nunique())
+    num_samples = len(train_frame)
+    print(f'Number of classes: {args.num_classes}')
     print(f'Number of training samples: {num_samples}')
 
     if args.batch_size is None:
@@ -273,6 +313,8 @@ def get_output_dir(args, model_name):
     output_dir += f'{args.version}/'
     output_dir += f'{args.seed}/'
     output_dir += f'{args.data_set}/'
+    if args.fold != 0:
+        output_dir += f'fold{args.fold}/'
     output_dir += f'{model_name}'
     if args.linear_probing:
         output_dir += '_linear'
@@ -285,8 +327,12 @@ def get_output_dir(args, model_name):
 
 def build_dataset(subset, args, build_transform: Callable, augment=False):
     transform = build_transform(subset, augment)
-    root = os.path.join(args.data_path, subset)
-    dataset = datasets.ImageFolder(root, transform=transform)
+    dataset = PublicOCTBscanDataset(
+        csv_file=args.csv_file,
+        root_dir=args.image_root,
+        split=subset,
+        transform=transform,
+    )
     return dataset
 
 
