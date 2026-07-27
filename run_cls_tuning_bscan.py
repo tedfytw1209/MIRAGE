@@ -5,9 +5,10 @@ datasets (duke14, glaucoma, oimhs, umn), referenced from OphFoundation's own
 finetune-UF-benchmark_*_single.sh scripts.
 
 Unlike run_cls_tuning_fundus.py (plain train/val/test/Class_x/ image
-folders), these 4 datasets' raw data is volumetric: one CSV row per volume,
-with a '%02d'-style filename template and a dash-separated list of slice
-indices (see mutils/dataset_public_oct.py for the exact schema). This script
+folders), these 4 datasets' raw data is volumetric: one CSV row per volume.
+Each dataset has its own CSV schema and on-disk slice-file naming
+convention, ported from OphFoundation's own working loaders (see
+mutils/dataset_public_oct.py for the per-dataset details). This script
 reads that CSV/fold convention directly via PublicOCTBscanDataset, which
 selects the middle slice of each volume as its one representative 2D image
 -- consistent with MIRAGE's classification head accepting a single image
@@ -361,6 +362,7 @@ def build_dataset(subset, args, build_transform: Callable, augment=False):
         csv_file=args.csv_file,
         root_dir=args.image_root,
         split=subset,
+        dataset_name=args.data_set,
         transform=transform,
     )
     return dataset
