@@ -26,12 +26,25 @@ from torch.utils.data import DataLoader
 
 from timm.loss import LabelSmoothingCrossEntropy
 from torchvision import datasets
+import wandb
 
 from mutils import misc
-from mutils.classification import train_1_epoch, evaluate, EarlyStopping
+from mutils.classification import EarlyStopping
+from mutils.classification_uf import train_1_epoch_uf, evaluate_uf
+from mutils.metrics_uf import safe_for_wandb
 from mutils.misc import fix_seeds, SortingHelpFormatter
 from fm_cls_config import fm_config_factory
 
+
+# Scalar metric keys, in column order, for the CSVs written below.
+# 'confusion_matrix'/'classification_report' (see mutils.metrics_uf) are not
+#   scalars, so they're logged to wandb and printed to console instead of
+#   being crammed into a CSV cell.
+TRAIN_CSV_COLUMNS = ['epoch', 'loss', 'accuracy', 'f1', 'auroc', 'ap', 'mcc']
+EVAL_CSV_COLUMNS = [
+    'epoch', 'loss', 'accuracy', 'f1', 'auroc', 'ap', 'precision', 'recall',
+    'kappa', 'mcc',
+]
 
 
 def get_args():
@@ -149,14 +162,18 @@ def get_args():
             ' loss to improve before stopping. (default: %(default)s)',
     )
     parser.add_argument(
-        '--early_stopping_delta', default=0.001, type=float,
+        '--early_stopping_delta', default=0.1, type=float,
         help='Parameter to specify the minimum change in the validation metric'
-            ' required to consider it an improvement. (default: %(default)s)',
+            ' required to consider it an improvement. Metrics here are on a'
+            ' 0-100 scale (mutils.metrics_uf), so 0.1 is 0.1 percentage'
+            ' points. (default: %(default)s)',
     )
     parser.add_argument(
-        '--early_stopping_delta_two', default=0.001, type=float,
+        '--early_stopping_delta_two', default=0.1, type=float,
         help='Parameter to specify the minimum change in the validation metric two'
-            ' required to consider it an improvement. (default: %(default)s)',
+            ' required to consider it an improvement. Metrics here are on a'
+            ' 0-100 scale (mutils.metrics_uf), so 0.1 is 0.1 percentage'
+            ' points. (default: %(default)s)',
     )
     parser.add_argument(
         '--early_start_from', default=20, type=int,
@@ -177,8 +194,9 @@ def get_args():
         help='Overwrite the output directory if it exists. (default: %(default)s)',
     )
     parser.add_argument(
-        '--val_metric', default='bacc', type=str,
-        help='Validation metric to monitor for early stopping. (default: %(default)s)',
+        '--val_metric', default='auroc', type=str,
+        help='Validation metric to monitor for early stopping (matches'
+            ' OphFoundation\'s `--eval_score`, default "auc"). (default: %(default)s)',
     )
     parser.add_argument(
         '--val_metric_two', default='loss', type=str,
@@ -198,6 +216,18 @@ def get_args():
     )
     parser.add_argument('--no_affine', action='store_false', dest='affine')
     parser.set_defaults(affine=True)
+
+    # wandb
+    parser.add_argument(
+        '--wandb_project', default='MIRAGE_fundus_result', type=str,
+        help='wandb project name. (default: %(default)s)',
+    )
+    parser.add_argument(
+        '--wandb_mode', default='online', type=str,
+        choices=['online', 'offline', 'disabled'],
+        help="wandb mode; use 'disabled' to skip wandb entirely without"
+            ' removing the logging calls. (default: %(default)s)',
+    )
 
     required_parser = parser.add_argument_group('required arguments')
     required_parser.add_argument(
@@ -374,6 +404,19 @@ def main(args):
         print('Dry run. Exiting.')
         sys.exit(0)
 
+    # Tag/name wandb runs so they're filterable/sortable by the axes that
+    #   actually vary across a sweep (dataset, model size, probing mode),
+    #   not just the opaque args checksum.
+    probe_tag = 'linear' if args.linear_probing else 'finetune'
+    wandb_tags = [args.data_set, model_name, 'slo', probe_tag]
+    wandb.init(
+        project=args.wandb_project,
+        name=f'{args.data_set}-{model_name}-slo-{probe_tag}-seed{args.seed}-{args_checksum}',
+        mode=args.wandb_mode,
+        tags=wandb_tags,
+        config=vars(args),
+    )
+
     optimizer = model_config.get_optimizer(model)
 
     dataset_train = None
@@ -445,11 +488,14 @@ def main(args):
         args.resume = f'{args.output_dir}/checkpoint-best-model.pth'
         misc.load_model(args=args, model=model, optimizer=None)
         save_path = args.output_dir
-        test_stats = evaluate(
+        test_stats = evaluate_uf(
             model, test_loader, 'Best', device, args.num_classes, mode='Test',
             save_predictions=True, save_path=save_path
         )
+        wandb.finish()
         exit(0)
+
+    best_val_stats = None
 
     if not args.eval:
         if args.smoothing > 0.0:
@@ -477,7 +523,7 @@ def main(args):
         assert valid_loader is not None
         for epoch in range(args.start_epoch, args.epochs):
             try:
-                train_stats = train_1_epoch(
+                train_stats = train_1_epoch_uf(
                     model,
                     criterion,
                     train_loader,
@@ -491,14 +537,24 @@ def main(args):
                 print(e)
                 break
 
-            train_stats_all.append(train_stats.values())
+            train_stats_all.append([train_stats[k] for k in TRAIN_CSV_COLUMNS])
 
-            val_stats = evaluate(
+            val_stats = evaluate_uf(
                 model, valid_loader, epoch, device, args.num_classes,
                 mode='Valid', args=args
             )
             assert val_stats is not None
-            val_stats_all.append(val_stats.values())
+            val_stats_all.append([val_stats[k] for k in EVAL_CSV_COLUMNS])
+
+            current_lr = optimizer.param_groups[0]['lr']
+            wandb_dict = {'epoch': epoch, 'lr': current_lr}
+            wandb_dict.update({
+                f'train_{k}': safe_for_wandb(v) for k, v in train_stats.items() if k != 'epoch'
+            })
+            wandb_dict.update({
+                f'val_{k}': safe_for_wandb(v) for k, v in val_stats.items() if k != 'epoch'
+            })
+            wandb.log(wandb_dict, step=epoch)
 
             # If the validation loss has improved, save checkpoint
             # Check if early stopping criterion is met
@@ -516,6 +572,7 @@ def main(args):
                         optimizer=deepcopy(optimizer.state_dict()),
                         epoch=epoch,
                     )
+                    best_val_stats = dict(val_stats)
                     # misc.save_model(args, epoch, model, optimizer)
                     print(
                         f'New best {model_config.__class__.__name__} model'
@@ -533,27 +590,44 @@ def main(args):
         # Save evaluation results
         pd.DataFrame(
             data=train_stats_all,
-            columns=['Epoch', 'Loss', 'BAcc', 'F1-score']  # type: ignore
+            columns=['Epoch', 'Loss', 'Accuracy', 'F1-score', 'AUROC', 'AP', 'MCC']  # type: ignore
         ).to_csv(f'{args.output_dir}/train_eval.csv', index=False)
-
 
         pd.DataFrame(
             data=val_stats_all,
-            columns=['Epoch', 'Loss', 'BAcc', 'AUROC', 'AP', 'F1-score', 'MCC'],  # type: ignore
+            columns=[
+                'Epoch', 'Loss', 'Accuracy', 'F1-score', 'AUROC', 'AP',
+                'Precision', 'Recall', 'Kappa', 'MCC',
+            ],  # type: ignore
         ).to_csv(f'{args.output_dir}/valid_eval.csv', index=False)
+
+        if best_val_stats is not None:
+            wandb.log({
+                'best_epoch': best_val_stats['epoch'],
+                **{f'best_val_{k}': safe_for_wandb(v) for k, v in best_val_stats.items() if k != 'epoch'},
+            })
 
     if test_loader is not None:
         # Evaluate on the best checkpoint
         args.resume = f'{args.output_dir}/checkpoint-best-model.pth'
         misc.load_model(args=args, model=model, optimizer=optimizer)
-        test_stats = evaluate(
+        test_stats = evaluate_uf(
             model, test_loader, 'Best', device, args.num_classes, mode='Test'
         )
         assert test_stats is not None
         pd.DataFrame(
-            data=[test_stats.values()],
-            columns=['Epoch', 'Loss', 'BAcc', 'AUROC', 'AP', 'F1-score', 'MCC'],  # type: ignore
+            data=[[test_stats[k] for k in EVAL_CSV_COLUMNS]],
+            columns=[
+                'Epoch', 'Loss', 'Accuracy', 'F1-score', 'AUROC', 'AP',
+                'Precision', 'Recall', 'Kappa', 'MCC',
+            ],  # type: ignore
         ).to_csv(f'{args.output_dir}/test_eval.csv', index=False)
+
+        wandb.log({
+            f'test_{k}': safe_for_wandb(v) for k, v in test_stats.items() if k != 'epoch'
+        })
+
+    wandb.finish()
 
 
 
