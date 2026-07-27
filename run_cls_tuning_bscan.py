@@ -519,8 +519,15 @@ def main(args):
         valid_loader = None
 
     if 'cross_train' not in args.data_set.lower():
+        # OphFoundation's own fold-split CSVs for these 4 public OCT
+        #   datasets never populate split=='test' -- their reference script
+        #   (finetune-UF-benchmark_*_single.sh /
+        #   pytorch_image_classification_our_model-v2-UF.py) reports 'val'
+        #   under the name "test" instead of a true held-out split. Do the
+        #   same here so results are comparable and evaluation isn't run
+        #   against an always-empty split.
         dataset_test = build_dataset(
-            subset='test',
+            subset='val',
             args=args,
             build_transform=model_config.build_transform,
             augment=False

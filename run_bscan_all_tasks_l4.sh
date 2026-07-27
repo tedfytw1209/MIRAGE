@@ -29,7 +29,7 @@ DATASET=$1
 #   layout and CSV/fold-split convention. Loops over all 10 pre-computed
 #   fold-split partitions (0-9) so summarize_bscan_results.py can report
 #   mean +/- std across folds, not just a fold-0 point estimate.
-DATA_ROOT="/orange/ruogu.fang/tienyuchang/OCTCubeM/assets/ext_oph_datasets/"
+DATA_ROOT="/blue/ruogu.fang/tienyuchang/OCTCubeM/assets/ext_oph_datasets/"
 CSV_ROOT="/blue/ruogu.fang/tienyuchang/OphFoundation/Public_OCT_split/"
 FOLDS=(0 1 2 3 4 5 6 7 8 9)
 WEIGHTS_BASE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Base.pth"
