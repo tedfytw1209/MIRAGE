@@ -50,6 +50,7 @@ launch() {
         --seed 0 \
         --weights \
             $WEIGHTS_BASE \
+#            $WEIGHTS_LARGE \
         $PROBE_FLAG \
         --data_root \
             $DATA_ROOT \
