@@ -5,7 +5,11 @@
 #SBATCH --mem=128GB
 #SBATCH --cpus-per-task=32
 #SBATCH --gpus=1
-#SBATCH --time=12:00:00
+# Full fine-tuning is far slower per run than the linear-probing sweep in
+#   run_uf_bootstrap.sh (all encoder weights get gradients, and only 2 runs
+#   fit concurrently instead of 10), so the wall time is raised accordingly:
+#   18 tasks x 10 bootstrap seeds at --runners 2.
+#SBATCH --time=72:00:00
 #SBATCH --output=%x.%j.out
 #SBATCH --account=ruogu.fang
 #SBATCH --qos=ruogu.fang
@@ -19,14 +23,17 @@ source ./venv/bin/activate
 #   mirrors OphFoundation's bootstrap convention (--bootstrap_runs /
 #   --new_subset_num / --subsetseed swept over a SUBSET_SEEDS list).
 #
-# Scope: run_cls_tuning_UF_multimodaliy.py (true multi-modal), MIRAGE-Large,
-#   --linear_probing. See run_uf_bootstrap_base.sh for the MIRAGE-Base +
-#   full-fine-tune counterpart; single-modality bootstrap
-#   (run_cls_tuning_UF.py) is still to do.
+# Smaller-model / full-fine-tune counterpart of run_uf_bootstrap.sh (which
+#   is MIRAGE-Large + --linear_probing). MIRAGE ships in two sizes only,
+#   Base (ViT-B) and Large (ViT-L) -- see fm_cls_config.py's
+#   `mirage-base`/`mirage-large` configs -- so "small" here is MIRAGE-Base.
+#   Both scripts write under the same --base_output_dir: the per-run path
+#   already encodes model name and `_finetune`/`_linear`, so results do not
+#   collide and can be aggregated together.
 DATA_TYPE="IRB2024_v5"
 SUBSET_NUM=${1:-500}
 DATA_ROOT="/orange/ruogu.fang/tienyuchang/IRB2024_imgs_paired/"
-WEIGHTS_LARGE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Large.pth"
+WEIGHTS_BASE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Base.pth"
 
 # 18 tasks (number of classes noted for reference only -- each script
 #   auto-detects num_classes from its CSV's `label` column at runtime):
@@ -45,23 +52,24 @@ for TASK in "${TASKS[@]}"; do
 
     # 10 bootstrap resamples of the training subset (same subset size, 10
     #   different random draws) -- matches the reference scripts'
-    #   SUBSET_SEEDS=(1 2 ... 10). --runners 10 runs all of them
-    #   concurrently within a task (subsetted + linear-probing is cheap
-    #   on GPU memory); tasks themselves are looped sequentially.
+    #   SUBSET_SEEDS=(1 2 ... 10). Only --runners 2 here (vs 10 for linear
+    #   probing): full fine-tuning keeps optimizer state and activations for
+    #   the whole encoder, so more concurrent runs risk OOM -- same limit
+    #   run_uf_all_tasks.sh uses for the multi-modal script.
     #
     # --wandb_tags keeps the tag list down to the axes worth filtering on
     #   ('bootstrap' + 'sub100'/'sub300'/'sub500'); without it the tag is the
     #   per-task --data_set (UF-Diabetes-bootstrap-sub100, ...), i.e. 18 tasks
     #   x 3 sizes = 54 single-use tags. The task stays in the run name and in
-    #   the logged config either way.
+    #   the logged config either way; 'mirage-base' and 'finetune' tags are
+    #   added by the script itself.
     ./runner python run_cls_tuning_UF_multimodaliy.py \
-        --runners 10 \
+        --runners 2 \
         -- \
         --version v1 \
         --seed 0 \
         --weights \
-            $WEIGHTS_LARGE \
-        --linear_probing \
+            $WEIGHTS_BASE \
         --data_root \
             $DATA_ROOT \
         --csv_file_train \

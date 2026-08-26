@@ -249,6 +249,16 @@ def get_args():
         help="wandb mode; use 'disabled' to skip wandb entirely without"
             ' removing the logging calls. (default: %(default)s)',
     )
+    parser.add_argument(
+        '--wandb_tags', default='', type=str,
+        help='Comma-separated wandb tags (e.g. "bootstrap,sub100"). When'
+            ' given, these replace the default per-dataset tag, which would'
+            ' otherwise create one tag per disease/subset combination (e.g.'
+            ' UF-Diabetes-bootstrap-sub100) and make the tag list unusable'
+            ' for filtering; the model-size, modality and probing tags are'
+            ' kept either way. Single value (not a sweep axis) so it can be'
+            ' passed through `runner`. (default: %(default)s)',
+    )
 
     required_parser = parser.add_argument_group('required arguments')
     required_parser.add_argument(
@@ -429,9 +439,18 @@ def main(args):
     #   mode), not just the opaque args checksum. This script always feeds
     #   both domains at once, so the modality tag is fixed to 'multimodal'
     #   (see run_cls_tuning_UF.py's --uf_modality tag for the single-domain
-    #   counterpart).
+    #   counterpart). --wandb_tags overrides the per-task tag for sweeps
+    #   where the task is not the axis of interest (see run_uf_bootstrap*.sh).
     probe_tag = 'linear' if args.linear_probing else 'finetune'
-    wandb_tags = [args.data_set, model_name, 'multimodal', probe_tag]
+    wandb_tags = [model_name, 'multimodal', probe_tag]
+    extra_tags = [t.strip() for t in args.wandb_tags.split(',') if t.strip()]
+    if extra_tags:
+        # Explicit tags (e.g. 'bootstrap', 'sub100') describe the sweep axis
+        #   being compared; the task stays visible in the run name/config, so
+        #   the per-dataset tag is dropped to keep the tag list small.
+        wandb_tags += extra_tags
+    else:
+        wandb_tags.insert(0, args.data_set)
     wandb.init(
         project=args.wandb_project,
         name=f'{args.data_set}-{model_name}-multimodal-{probe_tag}-seed{args.seed}-{args_checksum}',
