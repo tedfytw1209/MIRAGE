@@ -5,7 +5,7 @@
 #SBATCH --mem-per-cpu=8gb
 #SBATCH --partition=hpg-turin
 #SBATCH --gpus=1
-#SBATCH --time=72:00:00
+#SBATCH --time=144:00:00
 #SBATCH --output=%x.%j.out
 #SBATCH --account=ruogu.fang
 #SBATCH --qos=ruogu.fang
@@ -50,7 +50,6 @@ launch() {
         --seed 0 \
         --weights \
             $WEIGHTS_BASE \
-            $WEIGHTS_LARGE \
         $PROBE_FLAG \
         --data_root \
             $DATA_ROOT \
