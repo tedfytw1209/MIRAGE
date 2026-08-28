@@ -64,7 +64,7 @@ for TASK in "${TASKS[@]}"; do
     #   the logged config either way; 'mirage-base' and 'finetune' tags are
     #   added by the script itself.
     ./runner python run_cls_tuning_UF_multimodaliy.py \
-        --runners 2 \
+        --runners 10 \
         -- \
         --version v1 \
         --seed 0 \
