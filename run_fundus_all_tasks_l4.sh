@@ -34,7 +34,11 @@ DATASETS=(Glaucoma_fundus IDRiD_data JSIEC MESSIDOR2 PAPILA Retina APTOS2019)
 # $1: PROBE_FLAG ("" for full fine-tune, "--linear_probing" otherwise)
 # $2: DATASET
 launch() {
-    local PROBE_FLAG=$1
+    # Array (not a plain string) so that an empty PROBE_FLAG expands to zero
+    #   words instead of one empty argument. runner's value lookahead would
+    #   otherwise fold "" into the --weights list and emit a bogus third
+    #   combination whose --weights is empty, which argparse rejects.
+    local -a PROBE_FLAG=($1)
     local DATASET=$2
     ./runner python run_cls_tuning_fundus.py \
         --runners 1 \
@@ -42,19 +46,20 @@ launch() {
         --version v1 \
         --seed 0 \
         --weights \
-            $WEIGHTS_BASE \
-            $WEIGHTS_LARGE \
-        $PROBE_FLAG \
+            "$WEIGHTS_BASE" \
+            "$WEIGHTS_LARGE" \
+        "${PROBE_FLAG[@]}" \
         --data_root \
-            $DATA_ROOT \
+            "$DATA_ROOT" \
         --data_set \
-            $DATASET \
+            "$DATASET" \
         --base_output_dir \
             /blue/ruogu.fang/tienyuchang/MIRAGE_results/cls_fundus
 }
 
 for DATASET in "${DATASETS[@]}"; do
     echo "=== Dataset: ${DATASET} ==="
-    launch "--linear_probing" "$DATASET"
+    #launch "--linear_probing" "$DATASET"
+    launch "" "$DATASET"
     echo "=== Dataset ${DATASET} done ==="
 done
