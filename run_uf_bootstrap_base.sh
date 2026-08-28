@@ -79,7 +79,7 @@ for TASK in "${TASKS[@]}"; do
         --data_set \
             UF-${TASK}-bootstrap-sub${SUBSET_NUM} \
         --base_output_dir \
-            /orange/ruogu.fang/tienyuchang/MIRAGE_results/cls_uf_mm_bootstrap \
+            /blue/ruogu.fang/tienyuchang/MIRAGE_results/cls_uf_mm_bootstrap \
         --new_subset_num \
             $SUBSET_NUM \
         --subsetseed \

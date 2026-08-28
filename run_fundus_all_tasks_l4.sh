@@ -50,7 +50,7 @@ launch() {
         --data_set \
             $DATASET \
         --base_output_dir \
-            /orange/ruogu.fang/tienyuchang/MIRAGE_results/cls_fundus
+            /blue/ruogu.fang/tienyuchang/MIRAGE_results/cls_fundus
 }
 
 for DATASET in "${DATASETS[@]}"; do
