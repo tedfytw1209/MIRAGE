@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem-per-cpu=8gb
-#SBATCH --partition=hpg-turin
+#SBATCH --ntasks-per-node=1
+#SBATCH --partition=hpg-b200
+#SBATCH --mem=128GB
+#SBATCH --cpus-per-task=32
 #SBATCH --gpus=1
 #SBATCH --time=72:00:00
 #SBATCH --output=%x.%j.out
@@ -41,7 +41,7 @@ launch() {
     local -a PROBE_FLAG=($1)
     local DATASET=$2
     ./runner python run_cls_tuning_fundus.py \
-        --runners 1 \
+        --runners 2 \
         -- \
         --version v1 \
         --seed 0 \

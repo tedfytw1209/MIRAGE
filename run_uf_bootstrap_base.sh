@@ -5,10 +5,6 @@
 #SBATCH --mem=128GB
 #SBATCH --cpus-per-task=32
 #SBATCH --gpus=1
-# Full fine-tuning is far slower per run than the linear-probing sweep in
-#   run_uf_bootstrap.sh (all encoder weights get gradients, and only 2 runs
-#   fit concurrently instead of 10), so the wall time is raised accordingly:
-#   18 tasks x 10 bootstrap seeds at --runners 2.
 #SBATCH --time=72:00:00
 #SBATCH --output=%x.%j.out
 #SBATCH --account=ruogu.fang
