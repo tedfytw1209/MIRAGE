@@ -40,7 +40,11 @@ BASE_OUTPUT_DIR="/blue/ruogu.fang/tienyuchang/MIRAGE_results/cls_bscan"
 # $2: DATASET
 # $3: FOLD
 launch() {
-    local PROBE_FLAG=$1
+    # Array (not a plain string) so that an empty PROBE_FLAG expands to zero
+    #   words instead of one empty argument. runner's value lookahead would
+    #   otherwise fold "" into the --weights list and emit a bogus extra
+    #   combination whose --weights is empty, which argparse rejects.
+    local -a PROBE_FLAG=($1)
     local DATASET=$2
     local FOLD=$3
     ./runner python run_cls_tuning_bscan.py \
@@ -49,25 +53,25 @@ launch() {
         --version v1 \
         --seed 0 \
         --weights \
-#            $WEIGHTS_BASE \
-            $WEIGHTS_LARGE \
-        $PROBE_FLAG \
+            "$WEIGHTS_LARGE" \
+        "${PROBE_FLAG[@]}" \
         --data_root \
-            $DATA_ROOT \
+            "$DATA_ROOT" \
         --csv_root \
-            $CSV_ROOT \
+            "$CSV_ROOT" \
         --fold \
-            $FOLD \
+            "$FOLD" \
         --data_set \
-            $DATASET \
+            "$DATASET" \
         --base_output_dir \
-            $BASE_OUTPUT_DIR
+            "$BASE_OUTPUT_DIR"
 }
 
 echo "=== Dataset: ${DATASET} ==="
 for FOLD in "${FOLDS[@]}"; do
     echo "--- Fold: ${FOLD} ---"
-    launch "--linear_probing" "$DATASET" "$FOLD"
+    #launch "--linear_probing" "$DATASET" "$FOLD"
+    launch "" "$DATASET" "$FOLD"
     echo "--- Fold ${FOLD} done ---"
 done
 echo "=== Dataset ${DATASET} done ==="

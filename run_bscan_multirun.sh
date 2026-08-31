@@ -26,16 +26,19 @@ source ./venv/bin/activate
 #   volume to train/val/test and gives its integer label. --fold 0 uses the
 #   first pre-computed partition (see run_cls_tuning_bscan.py's module
 #   docstring for why looping over folds isn't done automatically).
-LINEAR_PROBING=${1:-true}  # true: freeze encoder (linear probe); false: full fine-tune
+LINEAR_PROBING=${1:-false}  # true: freeze encoder (linear probe); false: full fine-tune
 
 # Root containing the raw per-dataset OCT volume/slice image folders.
 DATA_ROOT="/orange/ruogu.fang/tienyuchang/OCTCubeM/assets/ext_oph_datasets/"
 CSV_ROOT="/blue/ruogu.fang/tienyuchang/OphFoundation/Public_OCT_split/"
 FOLD=0
 
-LINEAR_PROBING_FLAG=""
+# Array, not a string: the fine-tune case must expand to zero words, not
+#   one empty argument. runner's value lookahead would otherwise fold ""
+#   into the --weights list and emit bogus extra combinations.
+LINEAR_PROBING_FLAG=()
 if [ "$LINEAR_PROBING" = "true" ]; then
-    LINEAR_PROBING_FLAG="--linear_probing"
+    LINEAR_PROBING_FLAG=(--linear_probing)
 fi
 
 # 4 datasets (per OphFoundation's finetune-UF-benchmark_*_single.sh
@@ -50,13 +53,13 @@ fi
     --weights \
         /orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Base.pth \
         /orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Large.pth \
-    $LINEAR_PROBING_FLAG \
+    "${LINEAR_PROBING_FLAG[@]}" \
     --data_root \
-        $DATA_ROOT \
+        "$DATA_ROOT" \
     --csv_root \
-        $CSV_ROOT \
+        "$CSV_ROOT" \
     --fold \
-        $FOLD \
+        "$FOLD" \
     --data_set \
         duke14 \
         glaucoma \
