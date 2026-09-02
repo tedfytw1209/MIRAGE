@@ -72,14 +72,3 @@ for DATASET in "${DATASETS[@]}"; do
     done
     echo "=== Dataset ${DATASET} done ==="
 done
-
-# Aggregate the 10 per-fold test_eval.csv files into mean +/- std per
-#   (dataset, model, probe mode) -- see summarize_bscan_results.py.
-python summarize_bscan_results.py \
-    --base_output_dir $BASE_OUTPUT_DIR \
-    --version v1 \
-    --seed 0 \
-    --datasets "${DATASETS[@]}" \
-    --folds "${FOLDS[@]}" \
-    --out "${BASE_OUTPUT_DIR}/summary_fold_mean_std.csv"
-
