@@ -29,7 +29,8 @@ BASE_OUTPUT_DIR="/orange/ruogu.fang/tienyuchang/MIRAGE_results/cls_bscan"
 #   reference scripts, which benchmark these same public OCT datasets via
 #   their own CSV/fold pipeline). num_classes is auto-inferred by
 #   run_cls_tuning_bscan.py from the folder structure, not passed here.
-DATASETS=(duke14 glaucoma oimhs umn)
+#DATASETS=(duke14 glaucoma oimhs umn)
+DATASETS=(glaucoma)
 
 # $1: PROBE_FLAG ("" for full fine-tune, "--linear_probing" otherwise)
 # $2: DATASET
