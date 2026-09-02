@@ -44,7 +44,7 @@ fi
     --data_set \
         UF-${TASK} \
     --base_output_dir \
-        /orange/ruogu.fang/tienyuchang/MIRAGE_results/cls_uf \
+        /blue/ruogu.fang/tienyuchang/MIRAGE_results/cls_uf \
     --uf_modality \
         bscan \
         slo \

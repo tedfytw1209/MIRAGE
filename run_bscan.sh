@@ -44,5 +44,5 @@ fi
     --data_set \
         $DATASET \
     --base_output_dir \
-        /orange/ruogu.fang/tienyuchang/MIRAGE_results/cls_bscan
+        /blue/ruogu.fang/tienyuchang/MIRAGE_results/cls_bscan
 exit

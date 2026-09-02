@@ -23,7 +23,7 @@ CSV_ROOT="/blue/ruogu.fang/tienyuchang/OphFoundation/Public_OCT_split/"
 FOLDS=(0 1 2 3 4 5 6 7 8 9)
 WEIGHTS_BASE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Base.pth"
 WEIGHTS_LARGE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Large.pth"
-BASE_OUTPUT_DIR="/orange/ruogu.fang/tienyuchang/MIRAGE_results/cls_bscan"
+BASE_OUTPUT_DIR="/blue/ruogu.fang/tienyuchang/MIRAGE_results/cls_bscan"
 
 # 4 datasets (per OphFoundation's finetune-UF-benchmark_*_single.sh
 #   reference scripts, which benchmark these same public OCT datasets via

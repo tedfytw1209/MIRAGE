@@ -44,7 +44,7 @@ fi
     --data_set \
         UF-${TASK} \
     --base_output_dir \
-        /orange/ruogu.fang/tienyuchang/MIRAGE_results/cls_uf_mm \
+        /blue/ruogu.fang/tienyuchang/MIRAGE_results/cls_uf_mm \
     --wandb_project \
         MIRAGE_UF_result \
     --wandb_mode \
