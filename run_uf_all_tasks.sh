@@ -39,6 +39,13 @@ launch_single_modality() {
     local PROBE_FLAG=$1
     local TASK=$2
     local UF_CSV=$3
+    # These bscan-only/slo-only checkpoints also feed the dual-modality
+    #   late-fusion experiment (run_uf_dual_modality_latefusion.sh +
+    #   late_fusion_uf.py), which averages the two modalities' predicted
+    #   probabilities instead of the joint-attention fusion below
+    #   (launch_multimodal). Keep TASKS/--weights/--data_root/--csv_file_*/
+    #   --base_output_dir in sync with that script so its checksum-based
+    #   directory lookup keeps resolving to these checkpoints.
     ./runner python run_cls_tuning_UF.py \
         --runners 4 \
         -- \
