@@ -246,6 +246,16 @@ def get_args():
         help="wandb mode; use 'disabled' to skip wandb entirely without"
             ' removing the logging calls. (default: %(default)s)',
     )
+    parser.add_argument(
+        '--wandb_tags', default='', type=str,
+        help='Comma-separated wandb tags (e.g. "rerun"). When given, these'
+            ' replace the default per-dataset tag, which would otherwise'
+            ' create one tag per disease/subset combination (e.g.'
+            ' UF-Diabetes-bootstrap-sub100) and make the tag list unusable'
+            ' for filtering; the model-size, modality and probing tags are'
+            ' kept either way. Single value (not a sweep axis) so it can be'
+            ' passed through `runner`. (default: %(default)s)',
+    )
 
     required_parser = parser.add_argument_group('required arguments')
     required_parser.add_argument(
@@ -420,9 +430,20 @@ def main(args):
 
     # Tag/name wandb runs so they're filterable/sortable by the axes that
     #   actually vary across a sweep (task, model size, modality, probing
-    #   mode), not just the opaque args checksum.
+    #   mode), not just the opaque args checksum. --wandb_tags overrides the
+    #   per-task tag for sweeps where the task is not the axis of interest
+    #   (mirrors run_cls_tuning_UF_multimodaliy.py's --wandb_tags; see
+    #   run_uf_bootstrap*.sh / run_uf_rerun_all_and_latefusion.sh).
     probe_tag = 'linear' if args.linear_probing else 'finetune'
-    wandb_tags = [args.data_set, model_name, args.uf_modality, probe_tag]
+    wandb_tags = [model_name, args.uf_modality, probe_tag]
+    extra_tags = [t.strip() for t in args.wandb_tags.split(',') if t.strip()]
+    if extra_tags:
+        # Explicit tags (e.g. 'rerun') describe the sweep axis being
+        #   compared; the task stays visible in the run name/config, so the
+        #   per-dataset tag is dropped to keep the tag list small.
+        wandb_tags += extra_tags
+    else:
+        wandb_tags.insert(0, args.data_set)
     wandb.init(
         project=args.wandb_project,
         name=f'{args.data_set}-{model_name}-{args.uf_modality}-{probe_tag}-seed{args.seed}-{args_checksum}',

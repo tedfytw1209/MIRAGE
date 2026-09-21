@@ -17,20 +17,34 @@ DATA_ROOT="/orange/ruogu.fang/tienyuchang/IRB2024_imgs_paired/"
 WEIGHTS_BASE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Base.pth"
 WEIGHTS_LARGE="/orange/ruogu.fang/tienyuchang/MIRAGE_pretrain/MIRAGE-Large.pth"
 
+# Extra comma-separated wandb tag(s) to distinguish a rerun (e.g. "rerun",
+#   after deleting checkpoints and regenerating them from scratch -- see
+#   run_uf_rerun_all_and_latefusion.sh) from the original run of the same
+#   task. Empty by default, which keeps the original per-task wandb tag
+#   (see run_cls_tuning_UF.py / run_cls_tuning_UF_multimodaliy.py's
+#   --wandb_tags).
+WANDB_TAGS="${WANDB_TAGS:-}"
+WANDB_TAGS_FLAG=""
+if [ -n "$WANDB_TAGS" ]; then
+    WANDB_TAGS_FLAG="--wandb_tags $WANDB_TAGS"
+fi
+
 # 18 tasks (number of classes noted for reference only -- each script
 #   auto-detects num_classes from its CSV's `label` column at runtime):
 #   AMD:2 Cataract:2 DR:6 Glaucoma:6 DR_binary:2 Glaucoma_binary:2
 #   DME:5 CSR:2 Drusen:2 ERM:2 MH:2 CRVO_CRAO:2 PVD:2 RNV:2 DME_binary:2
 #   PD:2 DKD:2 Diabetes:2
+TASKS=(
+    AMD Cataract DR Glaucoma DR_binary Glaucoma_binary
+    DME CSR Drusen ERM MH CRVO_CRAO PVD RNV DME_binary
+    PD DKD Diabetes
+    Glaucoma_fbinary Glaucoma_filtered DR_fbinary DR_filtered
+)
+
 #TASKS=(
-#    AMD Cataract DR Glaucoma DR_binary Glaucoma_binary
-#    DME CSR Drusen ERM MH CRVO_CRAO PVD RNV DME_binary
+#    CRVO_CRAO PVD RNV DME_binary
 #    PD DKD Diabetes
 #)
-TASKS=(
-    CRVO_CRAO PVD RNV DME_binary
-    PD DKD Diabetes
-)
 
 # $1: PROBE_FLAG ("" for full fine-tune, "--linear_probing" otherwise)
 # $2: TASK
@@ -68,6 +82,7 @@ launch_single_modality() {
         --uf_modality \
             bscan \
             slo \
+        $WANDB_TAGS_FLAG \
         --wandb_project \
             MIRAGE_UF_result \
         --wandb_mode \
@@ -97,6 +112,7 @@ launch_multimodal() {
             UF-${TASK} \
         --base_output_dir \
             /orange/ruogu.fang/tienyuchang/MIRAGE_results/cls_uf_mm \
+        $WANDB_TAGS_FLAG \
         --wandb_project \
             MIRAGE_UF_result \
         --wandb_mode \

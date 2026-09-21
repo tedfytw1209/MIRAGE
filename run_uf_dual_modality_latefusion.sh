@@ -47,6 +47,7 @@ TASKS=(
     AMD Cataract DR Glaucoma DR_binary Glaucoma_binary
     DME CSR Drusen ERM MH CRVO_CRAO PVD RNV DME_binary
     PD DKD Diabetes
+    Glaucoma_fbinary Glaucoma_filtered DR_fbinary DR_filtered
 )
 
 
