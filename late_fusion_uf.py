@@ -30,8 +30,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import wandb
 
-from mutils.metrics_uf import compute_metrics_uf
+from mutils.metrics_uf import compute_metrics_uf, safe_for_wandb
 
 
 EVAL_CSV_COLUMNS = [
@@ -76,6 +77,26 @@ def get_args():
         '--save_predictions', action='store_true',
         help='Also save the fused predictions.npz next to each result.'
             ' (default: %(default)s)',
+    )
+
+    # wandb
+    parser.add_argument(
+        '--wandb_project', default='MIRAGE_UF_result_latefusion', type=str,
+        help='wandb project name. (default: %(default)s)',
+    )
+    parser.add_argument(
+        '--wandb_mode', default='online', type=str,
+        choices=['online', 'offline', 'disabled'],
+        help="wandb mode; use 'disabled' to skip wandb entirely without"
+            ' removing the logging calls. (default: %(default)s)',
+    )
+    parser.add_argument(
+        '--wandb_tags', default='', type=str,
+        help='Comma-separated wandb tags (e.g. "rerun"). When given, these'
+            ' replace the default per-dataset tag, which would otherwise'
+            ' create one tag per disease/subset combination and make the'
+            ' tag list unusable for filtering; the model-size and probing'
+            ' tags are kept either way. (default: %(default)s)',
     )
     return parser.parse_args()
 
@@ -176,6 +197,37 @@ def main():
                         prediction_decode_list=fused_preds,
                         prediction_list=fused_probs,
                     )
+
+                # One wandb run per (dataset, model, probe) combo, same
+                #   tag/name convention as run_cls_tuning_UF_multimodaliy.py
+                #   (model-size + fusion-kind + probe tags always kept;
+                #   --wandb_tags overrides the per-dataset tag for sweeps
+                #   where the task isn't the axis of interest).
+                wandb_tags = [model_name, 'latefusion', probe_tag]
+                extra_tags = [t.strip() for t in args.wandb_tags.split(',') if t.strip()]
+                if extra_tags:
+                    wandb_tags += extra_tags
+                else:
+                    wandb_tags.insert(0, dataset)
+                wandb.init(
+                    project=args.wandb_project,
+                    name=f'{dataset}-{model_name}-latefusion-{probe_tag}-seed{args.seed}',
+                    mode=args.wandb_mode,
+                    tags=wandb_tags,
+                    config={
+                        'dataset': dataset,
+                        'model_name': model_name,
+                        'probe_tag': probe_tag,
+                        'version': args.version,
+                        'seed': args.seed,
+                        'bscan_dir': str(bscan_dir),
+                        'slo_dir': str(slo_dir),
+                    },
+                )
+                wandb.log({
+                    f'test_{k}': safe_for_wandb(v) for k, v in stats.items() if k != 'epoch'
+                })
+                wandb.finish()
 
                 print(
                     f'{dataset}/{model_name}/{probe_tag}:'

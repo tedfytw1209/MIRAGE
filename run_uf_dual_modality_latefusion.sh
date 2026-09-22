@@ -1,33 +1,16 @@
-#! /bin/bash
+#!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --partition=hpg-b200
-#SBATCH --mem=128GB
-#SBATCH --cpus-per-task=32
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem-per-cpu=8gb
+#SBATCH --partition=hpg-turin
 #SBATCH --gpus=1
-#SBATCH --time=04:00:00
+#SBATCH --time=144:00:00
 #SBATCH --output=%x.%j.out
 #SBATCH --account=ruogu.fang
 #SBATCH --qos=ruogu.fang
 
 source ./venv/bin/activate
-
-# Dual-modality late fusion: for each task/model/probing-mode already
-#   trained by run_uf_all_tasks.sh's launch_single_modality (bscan-only and
-#   slo-only checkpoints), reruns run_cls_tuning_UF.py in --eval
-#   --save_predictions mode to dump each modality's per-sample classifier
-#   probabilities without retraining, then averages the two modalities'
-#   probabilities per sample (late fusion / soft-voting ensemble) and
-#   recomputes the OphFoundation metric set on the fused predictions
-#   (late_fusion_uf.py). This is distinct from run_cls_tuning_UF_multimodaliy
-#   .py's joint-attention "true multimodal" fusion (run_uf_multimodal.sh),
-#   which trains a single model on both domains at once.
-#
-# Must be invoked with the EXACT same --weights/--data_root/--csv_file_*/
-#   --data_set/--uf_modality/--version/--seed used to train the checkpoints,
-#   since run_cls_tuning_UF.py's get_output_dir() resolves to the training
-#   run's checksum-based output dir -- keep this in sync with
-#   run_uf_all_tasks.sh's launch_single_modality.
 
 DATA_TYPE="IRB2024_v5"
 DATA_ROOT="/orange/ruogu.fang/tienyuchang/IRB2024_imgs_paired/"
@@ -59,7 +42,7 @@ regenerate_predictions() {
     local TASK=$2
     local UF_CSV=$3
     ./runner python run_cls_tuning_UF.py \
-        --runners 4 \
+        --runners 1 \
         -- \
         --version v1 \
         --seed 0 \
@@ -106,6 +89,7 @@ python late_fusion_uf.py \
     --seed 0 \
     --datasets "${DATASETS[@]}" \
     --model_names mirage-base mirage-large \
-    --probe_tags finetune linear
+    --probe_tags finetune linear \
+    --wandb_project MIRAGE_UF_result
 
 exit
